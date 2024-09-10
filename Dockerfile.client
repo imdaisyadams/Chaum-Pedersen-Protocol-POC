@@ -1,0 +1,20 @@
+FROM rust as builder
+
+# Copy necessary files
+COPY Cargo.toml Cargo.lock build.rs zkp_auth.proto ./
+COPY src ./src
+
+# Build application
+RUN cargo build --release --bin zkp_auth_client
+
+# Runtime
+FROM debian:buster-slim
+
+# Install protobuf compiler
+RUN apt-get update && apt-get install -y protobuf-compiler libprotobuf-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /target/release/zkp_auth_client /usr/local/bin/client
+
+EXPOSE 50051
+CMD ["client"]
